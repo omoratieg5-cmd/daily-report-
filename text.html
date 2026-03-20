@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>نظام التقرير الإلكتروني للسلامة اليومي</title>
+  <!-- Firebase CDN (Compat version) -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+  <style>
+    /* جميع التصميمات كما هي دون تغيير */
+    :root { --primary: #2c5aa0; --secondary: #4CAF50; --danger: #f44336; --warning: #ff9800; --info: #17a2b8; --light: #f5f5f5; --dark: #333; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: #f0f2f5; color: #333; line-height: 1.6; padding: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; background: white; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.1); padding: 20px; }
+    header { text-align: center; margin-bottom: 30px; padding-bottom: 15px; border-bottom: 2px solid var(--primary); }
+    h1 { color: var(--primary); margin-bottom: 10px; }
+    .date-container { margin: 10px 0; }
+    .hijri-date { font-size: 1.3rem; color: var(--primary); font-weight: bold; margin-bottom: 5px; padding: 8px; background: #f0f8ff; border-radius: 5px; display: inline-block; }
+    .gregorian-date { font-size: 1rem; color: #666; margin-top: 5px; }
+    .subtitle { color: var(--dark); font-size: 1.2rem; margin-top: 10px; }
+    fieldset { border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 20px; background: #f9f9f9; }
+    legend { font-weight: bold; color: var(--primary); padding: 0 10px; font-size: 1.1rem; }
+    .counter-input { display: flex; align-items: center; margin-bottom: 15px; }
+    .counter-input label { width: 150px; font-weight: bold; }
+    .digital-input { padding: 8px; border: 2px solid #ddd; border-radius: 5px; text-align: center; font-size: 16px; margin: 0 10px; width: 80px; }
+    .digital-input.small { width: 70px; }
+    button { padding: 8px 15px; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+    button:hover { opacity: 0.9; transform: translateY(-2px); }
+    .btn-primary { background-color: var(--primary); color: white; }
+    .btn-secondary { background-color: #6c757d; color: white; }
+    .btn-success { background-color: var(--secondary); color: white; }
+    .btn-warning { background-color: var(--warning); color: white; }
+    .btn-danger { background-color: var(--danger); color: white; }
+    .btn-info { background-color: var(--info); color: white; }
+    .total-display { background: var(--primary); color: white; padding: 10px; border-radius: 5px; text-align: center; margin-top: 10px; }
+    .emergency-record { display: flex; gap: 10px; margin: 10px 0; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: white; flex-wrap: wrap; }
+    .emergency-record select, .emergency-record input { flex: 1; min-width: 120px; padding: 8px; }
+    .permit-status { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; }
+    .status-card { flex: 1; min-width: 150px; padding: 15px; border-radius: 8px; background: #f5f5f5; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .status-card.total { background: var(--primary); color: white; }
+    .digital-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+    .digital-table th, .digital-table td { border: 1px solid #ddd; padding: 12px; text-align: center; }
+    .digital-table th { background-color: var(--primary); color: white; }
+    .digital-table tr:nth-child(even) { background-color: #f2f2f2; }
+    .project-input, .progress-select, .details-textarea { width: 100%; padding: 10px; margin: 8px 0; border: 1px solid #ddd; border-radius: 5px; }
+    .details-textarea { height: 100px; resize: vertical; }
+    .progress-slider { width: 100%; margin: 10px 0; }
+    .control-panel { display: flex; justify-content: center; gap: 15px; margin-top: 30px; flex-wrap: wrap; }
+    .control-panel button { padding: 12px 20px; font-size: 1rem; }
+    .hidden { display: none; }
+    #reportPreview { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin-top: 20px; }
+    .report-section { margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid #eee; }
+    .report-section h3 { color: var(--primary); margin-bottom: 10px; padding-bottom: 5px; border-bottom: 1px solid #eee; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 15px; margin-top: 15px; }
+    .kpi-card { background: #f9f9f9; padding: 15px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .kpi-value { font-size: 1.8rem; font-weight: bold; margin: 10px 0; }
+    .incident-record { background: white; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ddd; }
+    .training-program { background: #f0f8ff; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #b3d9ff; }
+    .risk-assessment { background: #fff3cd; padding: 15px; margin: 10px 0; border-radius: 8px; border: 1px solid #ffc107; }
+    .form-row { display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 200px; }
+    .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .field-select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; margin-bottom: 15px; }
+    .save-container { margin: 40px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid var(--info); text-align: center; }
+    .save-container h3 { color: var(--primary); margin-bottom: 15px; }
+    .save-container button { padding: 12px 30px; font-size: 1.1rem; margin: 5px; }
+    .save-info { margin-top: 15px; font-size: 0.9rem; color: #666; font-style: italic; }
+    .saved-reports-folder { margin: 40px 0 20px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 2px solid var(--primary); }
+    .folder-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 10px; border-bottom: 1px solid #ddd; }
+    .folder-header h3 { color: var(--primary); margin: 0; }
+    .folder-tabs { display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+    .folder-tab { padding: 8px 15px; background: #e9ecef; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; transition: all 0.3s; }
+    .folder-tab.active { background: var(--primary); color: white; }
+    .reports-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px,1fr)); gap: 15px; margin-top: 15px; }
+    .report-card { background: white; border-radius: 8px; padding: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border: 1px solid #ddd; transition: transform 0.3s, box-shadow 0.3s; }
+    .report-card.draft { border-left: 5px solid var(--warning); background: #fff9e6; }
+    .report-card.final { border-left: 5px solid var(--secondary); background: #f0f9f0; }
+    .report-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid #eee; }
+    .report-type { font-size: 0.8rem; padding: 3px 8px; border-radius: 12px; font-weight: bold; }
+    .type-draft { background: var(--warning); color: white; }
+    .type-final { background: var(--secondary); color: white; }
+    .report-date { font-weight: bold; color: var(--primary); }
+    .report-field { color: #666; font-size: 0.9rem; }
+    .report-card-content { margin: 10px 0; }
+    .report-stats { display: flex; justify-content: space-between; margin: 10px 0; font-size: 0.9rem; }
+    .report-stat { text-align: center; }
+    .stat-value { font-weight: bold; color: var(--primary); }
+    .report-card-actions { display: flex; gap: 10px; margin-top: 15px; padding-top: 10px; border-top: 1px solid #eee; }
+    .report-card-actions button { flex: 1; padding: 8px 10px; font-size: 0.9rem; }
+    .empty-folder { text-align: center; padding: 40px 20px; color: #666; font-style: italic; }
+    .notification { position: fixed; top: 20px; right: 20px; padding: 15px 20px; background: var(--secondary); color: white; border-radius: 5px; box-shadow: 0 3px 10px rgba(0,0,0,0.2); z-index: 1000; opacity: 0; transition: opacity 0.3s; }
+    .notification.show { opacity: 1; }
+    .save-status { position: fixed; bottom: 20px; left: 20px; padding: 8px 15px; background: var(--info); color: white; border-radius: 5px; font-size: 0.9rem; opacity: 0; transition: opacity 0.3s; }
+    .save-status.show { opacity: 1; }
+    .email-dialog { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: white; padding: 25px; border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); z-index: 1100; width: 90%; max-width: 500px; display: none; }
+    .email-dialog h3 { margin-bottom: 15px; color: var(--primary); text-align: center; }
+    .email-dialog input, .email-dialog textarea { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .email-dialog textarea { height: 120px; resize: vertical; }
+    .email-dialog .button-group { display: flex; justify-content: space-between; gap: 10px; }
+    .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; display: none; }
+    @media (max-width: 768px) { .emergency-record { flex-direction: column; } .permit-status { flex-direction: column; } .control-panel { flex-direction: column; } .counter-input { flex-direction: column; align-items: flex-start; } .counter-input button, .counter-input input { margin: 5px 0; } .form-row { flex-direction: column; } .email-dialog { width: 95%; padding: 20px; } .reports-grid { grid-template-columns: 1fr; } .folder-tabs { flex-wrap: wrap; } }
+  </style>
+</head>
+<body>
+<div class="notification" id="notification"></div>
+<div class="save-status" id="saveStatus">جاري الحفظ...</div>
+<div class="overlay" id="emailOverlay"></div>
+<div class="email-dialog" id="emailDialog">
+  <h3>إرسال التقرير بالبريد الإلكتروني</h3>
+  <input type="email" id="emailTo" placeholder="البريد الإلكتروني للمستلم">
+  <input type="text" id="emailSubject" placeholder="موضوع البريد الإلكتروني">
+  <textarea id="emailBody" placeholder="نص البريد الإلكتروني"></textarea>
+  <div class="button-group"><button class="btn-secondary" onclick="closeEmailDialog()">إلغاء</button><button class="btn-success" onclick="sendEmail()">إرسال</button></div>
+</div>
+<div class="container">
+  <header>
+    <h1>تقرير السلامة اليومي</h1>
+    <div class="date-container"><div class="hijri-date" id="hijriDate"></div><div class="gregorian-date" id="currentDate"></div></div>
+    <p class="subtitle"><select id="fieldSelect" class="field-select"><option value="">-- اختر الحقل --</option><option value="الحطيبة والاستقلال">حقل: الحطيبة والاستقلال</option><option value="الساحل والصمود">حقل: الساحل والصمود</option><option value="الراقوبة">حقل: الراقوبة</option><option value="زلطن">حقل: زلطن</option></select></p>
+  </header>
+  <div id="inputForm">
+    <fieldset><legend>القوى العاملة</legend><div class="counter-input"><label>العمالة الوطنية:</label><button class="btn-secondary" onclick="decrement('national'); updateTotals()">-</button><input type="number" id="national" value="0" min="0" class="digital-input" onchange="updateTotals()"><button class="btn-primary" onclick="increment('national'); updateTotals()">+</button></div><div class="counter-input"><label>العمالة الأجنبية:</label><button class="btn-secondary" onclick="decrement('foreign'); updateTotals()">-</button><input type="number" id="foreign" value="0" min="0" class="digital-input" onchange="updateTotals()"><button class="btn-primary" onclick="increment('foreign'); updateTotals()">+</button></div><div class="total-display"><strong>المجموع: <span id="totalWorkers">0</span> مستخدم</strong></div></fieldset>
+    <fieldset><legend>سجل الحالات الطارئة</legend><button class="btn-primary" onclick="addEmergency()">+ إضافة حالة جديدة</button><div id="emergencyLog"></div></fieldset>
+    <fieldset><legend>مؤشرات أداء السلامة</legend><table class="digital-table"><tr><th>النشاط</th><th>العدد</th><th>الإجراء</th></tr><tr><td>جولات السلامة</td><td><input type="number" id="safetyTours" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('جولات السلامة')">التفاصيل</button></td></tr><tr><td>تصاريح العمل المفحوصة</td><td><input type="number" id="workPermits" value="0" min="0" class="digital-input small" readonly style="background-color:#f0f0f0;"></td><td><button class="btn-secondary" onclick="managePermits()">إدارة التصاريح</button></td></tr><tr><td>تقرير السلامة العام</td><td><input type="number" id="safetyReports" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('تقرير السلامة العام')">التفاصيل</button></td></tr><tr><td>تفتيش النظافة والنظام</td><td><input type="number" id="cleanlinessInspections" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('تفتيش النظافة والنظام')">التفاصيل</button></td></tr></table></fieldset>
+    <fieldset><legend>حوادث المركبات والآليات والإصابات</legend><div class="form-row"><div class="form-group"><label>عدد حوادث المركبات:</label><input type="number" id="vehicleAccidents" value="0" min="0" class="digital-input"></div><div class="form-group"><label>عدد حالات التوقف الاضطراري:</label><input type="number" id="emergencyStops" value="0" min="0" class="digital-input"></div></div><div class="form-row"><div class="form-group"><label>عدد الإصابات المسجلة:</label><input type="number" id="injuries" value="0" min="0" class="digital-input"></div><div class="form-group"><label>حالات معالجة:</label><input type="number" id="treatedCases" value="0" min="0" class="digital-input"></div><div class="form-group"><label>حالات فقدان وقت:</label><input type="number" id="lostTimeCases" value="0" min="0" class="digital-input"></div></div><button class="btn-primary" onclick="addVehicleIncident()">+ إضافة حادث مركبة</button><button class="btn-warning" onclick="addEmergencyStop()">+ إضافة توقف اضطراري</button><button class="btn-danger" onclick="addInjuryCase()">+ إضافة حالة إصابة</button><div id="vehicleIncidentsList"></div><div id="emergencyStopsList"></div><div id="injuryCasesList"></div></fieldset>
+    <fieldset><legend>الحالات غير الآمنة</legend><div class="form-row"><div class="form-group"><label>عدد الحالات غير الآمنة:</label><input type="number" id="unsafeConditions" value="0" min="0" class="digital-input"></div></div><button class="btn-warning" onclick="addUnsafeCondition()">+ إضافة حالة غير آمنة</button><div id="unsafeConditionsList"></div></fieldset>
+    <fieldset><legend>برامج تدريب السلامة</legend><div class="form-row"><div class="form-group"><label>عدد برامج التدريب:</label><input type="number" id="trainingPrograms" value="0" min="0" class="digital-input"></div><div class="form-group"><label>إجمالي عدد الحضور:</label><input type="number" id="totalAttendees" value="0" min="0" class="digital-input"></div></div><button class="btn-success" onclick="addTrainingProgram()">+ إضافة برنامج تدريبي</button><div id="trainingProgramsList"></div></fieldset>
+    <fieldset><legend>تقييم المخاطر</legend><button class="btn-primary" onclick="addRiskAssessment()">+ إضافة تقييم مخاطر</button><div id="riskAssessmentsList"></div></fieldset>
+    <fieldset><legend>نظام تتبع تصاريح العمل</legend><div class="permit-status"><div class="status-card"><h4>نشطة</h4><input type="number" id="activePermits" value="0" min="0" class="digital-input" onchange="updatePermitTotal()"></div><div class="status-card"><h4>معلقة</h4><input type="number" id="pendingPermits" value="0" min="0" class="digital-input" onchange="updatePermitTotal()"></div><div class="status-card"><h4>مرفوضة</h4><input type="number" id="rejectedPermits" value="0" min="0" class="digital-input" onchange="updatePermitTotal()"></div><div class="status-card total"><h4>المجموع</h4><div id="totalPermitsDisplay" class="kpi-value">0</div></div></div><button class="btn-primary" onclick="addNewPermit()">تصريح جديد</button><button class="btn-secondary" onclick="viewAllPermits()">عرض جميع التصاريح</button></fieldset>
+    <fieldset><legend>المشاريع والأعمال</legend><div class="form-row"><div class="form-group"><label>اسم المشروع:</label><input type="text" id="projectName" value="" class="project-input" placeholder="أدخل اسم المشروع"></div><div class="form-group"><label>حالة الإنجاز:</label><select id="projectStatus" class="progress-select"><option value="" selected>-- اختر الحالة --</option><option>لم يبدأ</option><option>قيد التنفيذ</option><option>متوقف</option><option>قيد المتابعة</option><option>مكتمل</option></select></div></div><label>نسبة الإنجاز:</label><input type="range" id="progressSlider" min="0" max="100" value="0" class="progress-slider" oninput="updateProgressValue()"><span id="progressValue">0%</span><label>الملاحظات:</label><textarea id="projectNotes" class="details-textarea" placeholder="أدخل ملاحظات المشروع هنا..."></textarea><button class="btn-primary" onclick="addProject()" style="margin-top:10px;">+ إضافة مشروع جديد</button><div id="projectsList"></div></fieldset>
+    <div class="control-panel"><button class="btn-success" onclick="saveDraft()">💾 حفظ المسودة</button><button class="btn-primary" onclick="generateReport()">📊 إنشاء التقرير</button><button class="btn-warning" onclick="openEmailDialog()">📧 إرسال بالبريد</button><button class="btn-danger" onclick="clearAll()">🗑️ تفريغ النموذج</button></div>
+  </div>
+  <div id="reportPreview" class="hidden">
+    <h2 style="text-align:center; color:var(--primary);">تقرير السلامة اليومي</h2>
+    <div class="date-container" style="text-align:center;"><div class="hijri-date" id="reportHijriDate"></div><div class="gregorian-date" id="reportDate"></div></div>
+    <p style="text-align:center;" id="reportSubtitle">حقل: <span id="reportField"></span></p>
+    <div class="report-section"><h3>ملخص التنفيذ والإنجاز</h3><div id="executiveSummary"></div></div>
+    <div class="report-section"><h3>القوى العاملة</h3><div id="workforceSummary"></div></div>
+    <div class="report-section"><h3>مؤشرات أداء السلامة</h3><div class="kpi-grid" id="kpiGrid"></div></div>
+    <div class="report-section"><h3>الحالات الطارئة</h3><div id="emergencySummary"></div></div>
+    <div class="report-section"><h3>حوادث المركبات والآليات والإصابات</h3><div id="vehicleAccidentsSummary"></div></div>
+    <div class="report-section"><h3>الحالات غير الآمنة</h3><div id="unsafeConditionsSummary"></div></div>
+    <div class="report-section"><h3>برامج تدريب السلامة</h3><div id="trainingProgramsSummary"></div></div>
+    <div class="report-section"><h3>تقييم المخاطر</h3><div id="riskAssessmentSummary"></div></div>
+    <div class="report-section"><h3>المشاريع والأعمال</h3><div id="projectSummary"></div></div>
+    <div class="save-container"><h3>حفظ التقرير</h3><button class="btn-success" onclick="saveFinalReport()">💾 حفظ كتقرير نهائي</button><button class="btn-primary" onclick="saveDraft()">💾 حفظ كمسودة</button><button class="btn-info" onclick="exportReportJSON()">📥 تصدير كملف JSON</button><div class="save-info">سيتم حفظ نسخة خاصة من هذا التقرير بتاريخ اليوم</div></div>
+    <div class="control-panel"><button class="btn-secondary" onclick="backToForm()">← العودة للنموذج</button><button class="btn-warning" onclick="openEmailDialog()">📧 إرسال بالبريد</button><button class="btn-success" onclick="window.print()">طباعة التقرير</button></div>
+  </div>
+  <div class="saved-reports-folder" id="savedReportsFolder"><div class="folder-header"><h3>📁 مجلد التقارير المحفوظة</h3><button class="btn-secondary" onclick="refreshSavedReports()">🔄 تحديث</button></div><div class="folder-tabs"><button class="folder-tab active" onclick="filterReports('all')">الكل</button><button class="folder-tab" onclick="filterReports('draft')">المسودات</button><button class="folder-tab" onclick="filterReports('final')">التقارير النهائية</button></div><div id="savedReportsGrid" class="reports-grid"></div></div>
+</div>
+<script>
+  // ========== Firebase ==========
+  const firebaseConfig = { apiKey: "AIzaSyDt-rxk7OIVavKFHV9KQkncTizVh6DBGjk", authDomain: "daily-safety-report.firebaseapp.com", databaseURL: "https://daily-safety-report-default-rtdb.firebaseio.com", projectId: "daily-safety-report", storageBucket: "daily-safety-report.firebasestorage.app", messagingSenderId: "213137127772", appId: "1:213137127772:web:cff22a1c45b21b625d2999" };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+  let currentFilter = 'all';
+  let reportsListener = null;
+
+  // ========== التواريخ ==========
+  const hijriMonths = ['محرم','صفر','ربيع الأول','ربيع الآخر','جمادى الأولى','جمادى الآخرة','رجب','شعبان','رمضان','شوال','ذو القعدة','ذو الحجة'];
+  const gregorianMonths = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const arabicDays = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  function getHijriDate() { const now = new Date(); const day = now.getDate(); const monthIndex = now.getMonth(); const year = now.getFullYear(); const hijriYear = Math.floor((year-622)*1.03069); return `${day} ${hijriMonths[monthIndex]} ${hijriYear} هـ`; }
+  function getCurrentDate() { const now = new Date(); const day = now.getDate(); const monthIndex = now.getMonth(); const year = now.getFullYear(); const dayIndex = now.getDay(); return `${arabicDays[dayIndex]}، ${day} ${gregorianMonths[monthIndex]} ${year}`; }
+  function getDateKey() { const now = new Date(); const y=now.getFullYear(); const m=String(now.getMonth()+1).padStart(2,'0'); const d=String(now.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
+  function getArabicDayName() { return arabicDays[new Date().getDay()]; }
+
+  function showNotification(msg,type='success'){ const n=document.getElementById('notification'); n.textContent=msg; n.className='notification show'; n.style.backgroundColor = type==='success'?'var(--secondary)':type==='error'?'var(--danger)':type==='warning'?'var(--warning)':'var(--info)'; setTimeout(()=>n.classList.remove('show'),3000); }
+  function showSaveStatus(msg,dur=2000){ const s=document.getElementById('saveStatus'); s.textContent=msg; s.className='save-status show'; setTimeout(()=>s.classList.remove('show'),dur); }
+
+  // العدادات
+  function increment(id){ const inp=document.getElementById(id); inp.value=parseInt(inp.value)+1; updateTotals(); }
+  function decrement(id){ const inp=document.getElementById(id); if(parseInt(inp.value)>0){ inp.value=parseInt(inp.value)-1; updateTotals(); } }
+  function updateTotals(){ const n=parseInt(document.getElementById('national').value); const f=parseInt(document.getElementById('foreign').value); document.getElementById('totalWorkers').textContent=n+f; }
+  function updatePermitTotal(){ const a=parseInt(document.getElementById('activePermits').value)||0; const p=parseInt(document.getElementById('pendingPermits').value)||0; const r=parseInt(document.getElementById('rejectedPermits').value)||0; const t=a+p+r; document.getElementById('totalPermitsDisplay').textContent=t; document.getElementById('workPermits').value=t; }
+
+  // دوال الإضافة (تستخدم فقط للإضافة اليدوية، وستقوم بزيادة العداد)
+  function addEmergency(){ const container=document.getElementById('emergencyLog'); const div=document.createElement('div'); div.className='emergency-record'; div.innerHTML=`<select class="emergency-type"><option value="">-- اختر النوع --</option><option>تدريبية</option><option>فعلية</option><option>تحذيرية</option></select><input type="time" class="emergency-time"><input type="text" class="emergency-location" placeholder="موقع الحالة"><select class="emergency-response"><option value="">-- اختر الاستجابة --</option><option>تم التعامل بنجاح</option><option>قيد المعالجة</option><option>يتطلب دعماً</option></select><button class="btn-danger" onclick="removeEmergency(this)">حذف</button>`; container.appendChild(div); }
+  function removeEmergency(btn){ btn.parentElement.remove(); }
+  function addVehicleIncident(){ const container=document.getElementById('vehicleIncidentsList'); const div=document.createElement('div'); div.className='incident-record'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>نوع المركبة/الآلية:</label><input type="text" class="vehicle-type" placeholder="مثال: سيارة بيك أب"></div><div class="form-group"><label>رقم المركبة:</label><input type="text" class="vehicle-number" placeholder="رقم اللوحة"></div></div><div class="form-row"><div class="form-group"><label>موقع الحادث:</label><input type="text" class="incident-location" placeholder="موقع الحادث"></div><div class="form-group"><label>التاريخ والوقت:</label><input type="datetime-local" class="incident-datetime"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="incident-description" placeholder="وصف الحادث" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeIncident(this)">حذف</button>`; container.appendChild(div); document.getElementById('vehicleAccidents').value = parseInt(document.getElementById('vehicleAccidents').value)+1; }
+  function removeIncident(btn){ btn.parentElement.remove(); let cur=parseInt(document.getElementById('vehicleAccidents').value); if(cur>0) document.getElementById('vehicleAccidents').value=cur-1; }
+  function addEmergencyStop(){ const container=document.getElementById('emergencyStopsList'); const div=document.createElement('div'); div.className='incident-record'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>المكان:</label><input type="text" class="stop-location" placeholder="مكان التوقف"></div><div class="form-group"><label>الوحدة:</label><input type="text" class="stop-unit" placeholder="الوحدة المعنية"></div></div><div class="form-row"><div class="form-group"><label>سبب التوقف:</label><textarea class="stop-reason" placeholder="سبب التوقف الاضطراري" rows="2"></textarea></div></div><div class="form-row"><div class="form-group"><label>التصرف المتخذ:</label><textarea class="stop-action" placeholder="التصرف المتخذ" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeEmergencyStop(this)">حذف</button>`; container.appendChild(div); document.getElementById('emergencyStops').value = parseInt(document.getElementById('emergencyStops').value)+1; }
+  function removeEmergencyStop(btn){ btn.parentElement.remove(); let cur=parseInt(document.getElementById('emergencyStops').value); if(cur>0) document.getElementById('emergencyStops').value=cur-1; }
+  function addInjuryCase(){ const container=document.getElementById('injuryCasesList'); const div=document.createElement('div'); div.className='incident-record'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم المصاب:</label><input type="text" class="injured-name" placeholder="اسم المصاب"></div><div class="form-group"><label>نوع الإصابة:</label><select class="injury-type"><option value="">-- اختر النوع --</option><option>بسيطة</option><option>متوسطة</option><option>خطيرة</option></select></div></div><div class="form-row"><div class="form-group"><label>مكان الإصابة:</label><input type="text" class="injury-location" placeholder="مكان الإصابة"></div><div class="form-group"><label>التاريخ والوقت:</label><input type="datetime-local" class="injury-datetime"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="injury-description" placeholder="وصف الإصابة" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeInjury(this)">حذف</button>`; container.appendChild(div); document.getElementById('injuries').value = parseInt(document.getElementById('injuries').value)+1; }
+  function removeInjury(btn){ btn.parentElement.remove(); let cur=parseInt(document.getElementById('injuries').value); if(cur>0) document.getElementById('injuries').value=cur-1; }
+  function addUnsafeCondition(){ const container=document.getElementById('unsafeConditionsList'); const div=document.createElement('div'); div.className='incident-record'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>نوع الحالة:</label><select class="unsafe-type"><option value="">-- اختر النوع --</option><option>مخالفة معدات الوقاية</option><option>ظروف عمل غير آمنة</option><option>مخالفة إجراءات السلامة</option><option>تلوث بيئي</option><option>أخرى</option></select></div><div class="form-group"><label>الموقع:</label><input type="text" class="unsafe-location" placeholder="موقع الحالة"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="unsafe-description" placeholder="وصف الحالة غير الآمنة" rows="3"></textarea></div></div><div class="form-row"><div class="form-group"><label>التصرف المتخذ:</label><textarea class="unsafe-action" placeholder="التصرف المتخذ لمعالجة الحالة" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeUnsafeCondition(this)">حذف</button>`; container.appendChild(div); document.getElementById('unsafeConditions').value = parseInt(document.getElementById('unsafeConditions').value)+1; }
+  function removeUnsafeCondition(btn){ btn.parentElement.remove(); let cur=parseInt(document.getElementById('unsafeConditions').value); if(cur>0) document.getElementById('unsafeConditions').value=cur-1; }
+  function addTrainingProgram(){ const container=document.getElementById('trainingProgramsList'); const div=document.createElement('div'); div.className='training-program'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم البرنامج:</label><input type="text" class="training-name" placeholder="اسم البرنامج"></div><div class="form-group"><label>عدد الحضور:</label><input type="number" class="attendees-count" min="0" value="0" onchange="updateTotalAttendees()"></div></div><div class="form-row"><div class="form-group"><label>المدرب:</label><input type="text" class="trainer-name" placeholder="اسم المدرب"></div><div class="form-group"><label>التاريخ:</label><input type="date" class="training-date"></div></div><div class="form-row"><div class="form-group"><label>ملاحظات:</label><textarea class="training-notes" placeholder="ملاحظات حول البرنامج" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeTrainingProgram(this)">حذف</button>`; container.appendChild(div); document.getElementById('trainingPrograms').value = parseInt(document.getElementById('trainingPrograms').value)+1; }
+  function updateTotalAttendees(){ let total=0; document.querySelectorAll('.attendees-count').forEach(inp=>total+=parseInt(inp.value)||0); document.getElementById('totalAttendees').value=total; }
+  function removeTrainingProgram(btn){ const prog=btn.parentElement; prog.remove(); let cur=parseInt(document.getElementById('trainingPrograms').value); if(cur>0) document.getElementById('trainingPrograms').value=cur-1; updateTotalAttendees(); }
+  function addRiskAssessment(){ const container=document.getElementById('riskAssessmentsList'); const div=document.createElement('div'); div.className='risk-assessment'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>الموقع:</label><input type="text" class="risk-location" placeholder="موقع الخطر"></div><div class="form-group"><label>وصف العمل:</label><input type="text" class="risk-work" placeholder="وصف العمل"></div></div><div class="form-row"><div class="form-group"><label>معدل الخطر:</label><select class="risk-level"><option value="">-- اختر المستوى --</option><option>منخفض</option><option>متوسط</option><option>مرتفع</option><option>عالٍ جداً</option></select></div></div><div class="form-row"><div class="form-group"><label>الإجراءات الوقائية:</label><textarea class="risk-prevention" placeholder="الإجراءات الوقائية المطلوبة" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeRiskAssessment(this)">حذف</button>`; container.appendChild(div); }
+  function removeRiskAssessment(btn){ btn.parentElement.remove(); }
+  function addProject(){ const container=document.getElementById('projectsList'); const div=document.createElement('div'); div.className='incident-record'; div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم المشروع:</label><input type="text" class="project-name" placeholder="اسم المشروع"></div><div class="form-group"><label>حالة الإنجاز:</label><select class="project-status"><option value="">-- اختر الحالة --</option><option>لم يبدأ</option><option>قيد التنفيذ</option><option>متوقف</option><option>قيد المتابعة</option><option>مكتمل</option></select></div></div><div class="form-row"><div class="form-group"><label>نسبة الإنجاز:</label><input type="range" class="project-progress" min="0" max="100" value="0" oninput="this.nextElementSibling.textContent=this.value+'%'"><span>0%</span></div></div><div class="form-row"><div class="form-group"><label>الملاحظات:</label><textarea class="project-notes" placeholder="ملاحظات المشروع" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeProject(this)">حذف</button>`; container.appendChild(div); }
+  function removeProject(btn){ btn.parentElement.remove(); }
+
+  // دوال مساعدة
+  function addNewPermit(){ showNotification("تم فتح نموذج إضافة تصريح عمل جديد","info"); }
+  function viewAllPermits(){ showNotification("عرض قائمة بجميع تصاريح العمل","info"); }
+  function updateProgressValue(){ const s=document.getElementById('progressSlider'); document.getElementById('progressValue').textContent=s.value+'%'; }
+  function showDetails(type){ showNotification(`عرض تفاصيل ${type}`,"info"); }
+  function managePermits(){ showNotification("فتح نافذة إدارة تصاريح العمل","info"); }
+
+  // جمع البيانات
+  function collectCurrentData(){
+    return {
+      fieldName: document.getElementById('fieldSelect').value || 'غير محدد',
+      hijriDate: getHijriDate(), gregorianDate: getCurrentDate(), dayName: getArabicDayName(), dateKey: getDateKey(), timestamp: new Date().getTime(),
+      nationalWorkers: document.getElementById('national').value, foreignWorkers: document.getElementById('foreign').value, totalWorkers: document.getElementById('totalWorkers').textContent,
+      safetyTours: document.getElementById('safetyTours').value, workPermits: document.getElementById('workPermits').value,
+      safetyReports: document.getElementById('safetyReports').value, cleanlinessInspections: document.getElementById('cleanlinessInspections').value,
+      vehicleAccidents: document.getElementById('vehicleAccidents').value, emergencyStops: document.getElementById('emergencyStops').value,
+      injuries: document.getElementById('injuries').value, treatedCases: document.getElementById('treatedCases').value, lostTimeCases: document.getElementById('lostTimeCases').value,
+      unsafeConditions: document.getElementById('unsafeConditions').value, trainingPrograms: document.getElementById('trainingPrograms').value, totalAttendees: document.getElementById('totalAttendees').value,
+      activePermits: document.getElementById('activePermits').value||0, pendingPermits: document.getElementById('pendingPermits').value||0, rejectedPermits: document.getElementById('rejectedPermits').value||0,
+      projectName: document.getElementById('projectName').value||'غير محدد', projectStatus: document.getElementById('projectStatus').value||'غير محدد', progressValue: document.getElementById('progressSlider').value,
+      projectNotes: document.getElementById('projectNotes').value||'لا توجد ملاحظات',
+      emergencyRecords: Array.from(document.querySelectorAll('.emergency-record')).map(r=>({type: r.querySelector('.emergency-type')?.value||'', time: r.querySelector('.emergency-time')?.value||'', location: r.querySelector('.emergency-location')?.value||'', response: r.querySelector('.emergency-response')?.value||''})),
+      vehicleIncidents: Array.from(document.querySelectorAll('#vehicleIncidentsList .incident-record')).map(r=>({vehicleType: r.querySelector('.vehicle-type')?.value||'', vehicleNumber: r.querySelector('.vehicle-number')?.value||'', location: r.querySelector('.incident-location')?.value||'', datetime: r.querySelector('.incident-datetime')?.value||'', description: r.querySelector('.incident-description')?.value||''})),
+      emergencyStopsDetails: Array.from(document.querySelectorAll('#emergencyStopsList .incident-record')).map(r=>({location: r.querySelector('.stop-location')?.value||'', unit: r.querySelector('.stop-unit')?.value||'', reason: r.querySelector('.stop-reason')?.value||'', action: r.querySelector('.stop-action')?.value||''})),
+      injuryCases: Array.from(document.querySelectorAll('#injuryCasesList .incident-record')).map(r=>({name: r.querySelector('.injured-name')?.value||'', type: r.querySelector('.injury-type')?.value||'', location: r.querySelector('.injury-location')?.value||'', datetime: r.querySelector('.injury-datetime')?.value||'', description: r.querySelector('.injury-description')?.value||''})),
+      unsafeConditionsDetails: Array.from(document.querySelectorAll('#unsafeConditionsList .incident-record')).map(r=>({type: r.querySelector('.unsafe-type')?.value||'', location: r.querySelector('.unsafe-location')?.value||'', description: r.querySelector('.unsafe-description')?.value||'', action: r.querySelector('.unsafe-action')?.value||''})),
+      trainingProgramsDetails: Array.from(document.querySelectorAll('#trainingProgramsList .training-program')).map(p=>({name: p.querySelector('.training-name')?.value||'', attendees: p.querySelector('.attendees-count')?.value||0, trainer: p.querySelector('.trainer-name')?.value||'', date: p.querySelector('.training-date')?.value||'', notes: p.querySelector('.training-notes')?.value||''})),
+      projectsDetails: Array.from(document.querySelectorAll('#projectsList .incident-record')).map(p=>({name: p.querySelector('.project-name')?.value||'', status: p.querySelector('.project-status')?.value||'', progress: p.querySelector('.project-progress')?.value||0, notes: p.querySelector('.project-notes')?.value||''})),
+      riskAssessments: Array.from(document.querySelectorAll('.risk-assessment')).map(a=>({location: a.querySelector('.risk-location')?.value||'', work: a.querySelector('.risk-work')?.value||'', level: a.querySelector('.risk-level')?.value||'', prevention: a.querySelector('.risk-prevention')?.value||''})),
+      saveTime: new Date().toISOString()
+    };
+  }
+
+  // حفظ
+  function saveDraft(){ const data=collectCurrentData(); data.reportType='draft'; localStorage.setItem('safetyReportDraft',JSON.stringify(data)); saveToFolder(data); showNotification("تم حفظ المسودة بنجاح","success"); return data; }
+  function saveFinalReport(){ const data=collectCurrentData(); data.reportType='final'; saveToFolder(data); showNotification(`تم حفظ التقرير النهائي بتاريخ: ${data.hijriDate}`,"success"); return data; }
+  function saveToFolder(data){ let saved=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}'); const key=`${data.reportType}_${data.timestamp}`; saved[key]=data; localStorage.setItem('savedReportsFolder',JSON.stringify(saved)); db.ref('reports/'+key).set(data).catch(e=>console.error(e)); }
+
+  // ========== تعبئة النموذج من البيانات (بدون تكرار، دون استدعاء دوال الإضافة التي تزيد العداد) ==========
+  function populateFormFromData(data){
+    // الحقول الأساسية
+    document.getElementById('national').value=data.nationalWorkers||0; document.getElementById('foreign').value=data.foreignWorkers||0;
+    document.getElementById('safetyTours').value=data.safetyTours||0; document.getElementById('safetyReports').value=data.safetyReports||0;
+    document.getElementById('cleanlinessInspections').value=data.cleanlinessInspections||0; document.getElementById('vehicleAccidents').value=data.vehicleAccidents||0;
+    document.getElementById('emergencyStops').value=data.emergencyStops||0; document.getElementById('injuries').value=data.injuries||0;
+    document.getElementById('treatedCases').value=data.treatedCases||0; document.getElementById('lostTimeCases').value=data.lostTimeCases||0;
+    document.getElementById('unsafeConditions').value=data.unsafeConditions||0; document.getElementById('trainingPrograms').value=data.trainingPrograms||0;
+    document.getElementById('totalAttendees').value=data.totalAttendees||0; document.getElementById('activePermits').value=data.activePermits||0;
+    document.getElementById('pendingPermits').value=data.pendingPermits||0; document.getElementById('rejectedPermits').value=data.rejectedPermits||0;
+    document.getElementById('fieldSelect').value=data.fieldName!=='غير محدد'?data.fieldName:'';
+    document.getElementById('projectName').value=data.projectName!=='غير محدد'?data.projectName:'';
+    document.getElementById('projectStatus').value=data.projectStatus!=='غير محدد'?data.projectStatus:'';
+    document.getElementById('progressSlider').value=data.progressValue||0; document.getElementById('progressValue').textContent=(data.progressValue||0)+'%';
+    document.getElementById('projectNotes').value=data.projectNotes!=='لا توجد ملاحظات'?data.projectNotes:'';
+    updateTotals(); updatePermitTotal();
+
+    // تفريغ القوائم
+    const containers=['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList'];
+    containers.forEach(id=>document.getElementById(id).innerHTML='');
+
+    // إعادة بناء الحالات الطارئة
+    if(data.emergencyRecords) data.emergencyRecords.forEach(rec=>{
+      const div=document.createElement('div'); div.className='emergency-record';
+      div.innerHTML=`<select class="emergency-type"><option value="">-- اختر النوع --</option><option>تدريبية</option><option>فعلية</option><option>تحذيرية</option></select><input type="time" class="emergency-time"><input type="text" class="emergency-location" placeholder="موقع الحالة"><select class="emergency-response"><option value="">-- اختر الاستجابة --</option><option>تم التعامل بنجاح</option><option>قيد المعالجة</option><option>يتطلب دعماً</option></select><button class="btn-danger" onclick="removeEmergency(this)">حذف</button>`;
+      document.getElementById('emergencyLog').appendChild(div);
+      if(div.querySelector('.emergency-type')) div.querySelector('.emergency-type').value=rec.type;
+      if(div.querySelector('.emergency-time')) div.querySelector('.emergency-time').value=rec.time;
+      if(div.querySelector('.emergency-location')) div.querySelector('.emergency-location').value=rec.location;
+      if(div.querySelector('.emergency-response')) div.querySelector('.emergency-response').value=rec.response;
+    });
+
+    // حوادث المركبات
+    if(data.vehicleIncidents) data.vehicleIncidents.forEach(inc=>{
+      const div=document.createElement('div'); div.className='incident-record';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>نوع المركبة/الآلية:</label><input type="text" class="vehicle-type" placeholder="مثال: سيارة بيك أب"></div><div class="form-group"><label>رقم المركبة:</label><input type="text" class="vehicle-number" placeholder="رقم اللوحة"></div></div><div class="form-row"><div class="form-group"><label>موقع الحادث:</label><input type="text" class="incident-location" placeholder="موقع الحادث"></div><div class="form-group"><label>التاريخ والوقت:</label><input type="datetime-local" class="incident-datetime"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="incident-description" placeholder="وصف الحادث" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeIncident(this)">حذف</button>`;
+      document.getElementById('vehicleIncidentsList').appendChild(div);
+      if(div.querySelector('.vehicle-type')) div.querySelector('.vehicle-type').value=inc.vehicleType||'';
+      if(div.querySelector('.vehicle-number')) div.querySelector('.vehicle-number').value=inc.vehicleNumber||'';
+      if(div.querySelector('.incident-location')) div.querySelector('.incident-location').value=inc.location||'';
+      if(div.querySelector('.incident-datetime')) div.querySelector('.incident-datetime').value=inc.datetime||'';
+      if(div.querySelector('.incident-description')) div.querySelector('.incident-description').value=inc.description||'';
+    });
+
+    // التوقفات الاضطرارية
+    if(data.emergencyStopsDetails) data.emergencyStopsDetails.forEach(stop=>{
+      const div=document.createElement('div'); div.className='incident-record';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>المكان:</label><input type="text" class="stop-location" placeholder="مكان التوقف"></div><div class="form-group"><label>الوحدة:</label><input type="text" class="stop-unit" placeholder="الوحدة المعنية"></div></div><div class="form-row"><div class="form-group"><label>سبب التوقف:</label><textarea class="stop-reason" placeholder="سبب التوقف الاضطراري" rows="2"></textarea></div></div><div class="form-row"><div class="form-group"><label>التصرف المتخذ:</label><textarea class="stop-action" placeholder="التصرف المتخذ" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeEmergencyStop(this)">حذف</button>`;
+      document.getElementById('emergencyStopsList').appendChild(div);
+      if(div.querySelector('.stop-location')) div.querySelector('.stop-location').value=stop.location||'';
+      if(div.querySelector('.stop-unit')) div.querySelector('.stop-unit').value=stop.unit||'';
+      if(div.querySelector('.stop-reason')) div.querySelector('.stop-reason').value=stop.reason||'';
+      if(div.querySelector('.stop-action')) div.querySelector('.stop-action').value=stop.action||'';
+    });
+
+    // الإصابات
+    if(data.injuryCases) data.injuryCases.forEach(inj=>{
+      const div=document.createElement('div'); div.className='incident-record';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم المصاب:</label><input type="text" class="injured-name" placeholder="اسم المصاب"></div><div class="form-group"><label>نوع الإصابة:</label><select class="injury-type"><option value="">-- اختر النوع --</option><option>بسيطة</option><option>متوسطة</option><option>خطيرة</option></select></div></div><div class="form-row"><div class="form-group"><label>مكان الإصابة:</label><input type="text" class="injury-location" placeholder="مكان الإصابة"></div><div class="form-group"><label>التاريخ والوقت:</label><input type="datetime-local" class="injury-datetime"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="injury-description" placeholder="وصف الإصابة" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeInjury(this)">حذف</button>`;
+      document.getElementById('injuryCasesList').appendChild(div);
+      if(div.querySelector('.injured-name')) div.querySelector('.injured-name').value=inj.name||'';
+      if(div.querySelector('.injury-type')) div.querySelector('.injury-type').value=inj.type||'';
+      if(div.querySelector('.injury-location')) div.querySelector('.injury-location').value=inj.location||'';
+      if(div.querySelector('.injury-datetime')) div.querySelector('.injury-datetime').value=inj.datetime||'';
+      if(div.querySelector('.injury-description')) div.querySelector('.injury-description').value=inj.description||'';
+    });
+
+    // الحالات غير الآمنة
+    if(data.unsafeConditionsDetails) data.unsafeConditionsDetails.forEach(cond=>{
+      const div=document.createElement('div'); div.className='incident-record';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>نوع الحالة:</label><select class="unsafe-type"><option value="">-- اختر النوع --</option><option>مخالفة معدات الوقاية</option><option>ظروف عمل غير آمنة</option><option>مخالفة إجراءات السلامة</option><option>تلوث بيئي</option><option>أخرى</option></select></div><div class="form-group"><label>الموقع:</label><input type="text" class="unsafe-location" placeholder="موقع الحالة"></div></div><div class="form-row"><div class="form-group"><label>الوصف:</label><textarea class="unsafe-description" placeholder="وصف الحالة غير الآمنة" rows="3"></textarea></div></div><div class="form-row"><div class="form-group"><label>التصرف المتخذ:</label><textarea class="unsafe-action" placeholder="التصرف المتخذ لمعالجة الحالة" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeUnsafeCondition(this)">حذف</button>`;
+      document.getElementById('unsafeConditionsList').appendChild(div);
+      if(div.querySelector('.unsafe-type')) div.querySelector('.unsafe-type').value=cond.type||'';
+      if(div.querySelector('.unsafe-location')) div.querySelector('.unsafe-location').value=cond.location||'';
+      if(div.querySelector('.unsafe-description')) div.querySelector('.unsafe-description').value=cond.description||'';
+      if(div.querySelector('.unsafe-action')) div.querySelector('.unsafe-action').value=cond.action||'';
+    });
+
+    // برامج التدريب
+    if(data.trainingProgramsDetails) data.trainingProgramsDetails.forEach(prog=>{
+      const div=document.createElement('div'); div.className='training-program';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم البرنامج:</label><input type="text" class="training-name" placeholder="اسم البرنامج"></div><div class="form-group"><label>عدد الحضور:</label><input type="number" class="attendees-count" min="0" value="0" onchange="updateTotalAttendees()"></div></div><div class="form-row"><div class="form-group"><label>المدرب:</label><input type="text" class="trainer-name" placeholder="اسم المدرب"></div><div class="form-group"><label>التاريخ:</label><input type="date" class="training-date"></div></div><div class="form-row"><div class="form-group"><label>ملاحظات:</label><textarea class="training-notes" placeholder="ملاحظات حول البرنامج" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeTrainingProgram(this)">حذف</button>`;
+      document.getElementById('trainingProgramsList').appendChild(div);
+      if(div.querySelector('.training-name')) div.querySelector('.training-name').value=prog.name||'';
+      if(div.querySelector('.attendees-count')) div.querySelector('.attendees-count').value=prog.attendees||0;
+      if(div.querySelector('.trainer-name')) div.querySelector('.trainer-name').value=prog.trainer||'';
+      if(div.querySelector('.training-date')) div.querySelector('.training-date').value=prog.date||'';
+      if(div.querySelector('.training-notes')) div.querySelector('.training-notes').value=prog.notes||'';
+    });
+    updateTotalAttendees(); // تحديث إجمالي الحضور
+
+    // المشاريع الإضافية
+    if(data.projectsDetails) data.projectsDetails.forEach(proj=>{
+      const div=document.createElement('div'); div.className='incident-record';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>اسم المشروع:</label><input type="text" class="project-name" placeholder="اسم المشروع"></div><div class="form-group"><label>حالة الإنجاز:</label><select class="project-status"><option value="">-- اختر الحالة --</option><option>لم يبدأ</option><option>قيد التنفيذ</option><option>متوقف</option><option>قيد المتابعة</option><option>مكتمل</option></select></div></div><div class="form-row"><div class="form-group"><label>نسبة الإنجاز:</label><input type="range" class="project-progress" min="0" max="100" value="0" oninput="this.nextElementSibling.textContent=this.value+'%'"><span>0%</span></div></div><div class="form-row"><div class="form-group"><label>الملاحظات:</label><textarea class="project-notes" placeholder="ملاحظات المشروع" rows="3"></textarea></div></div><button class="btn-danger" onclick="removeProject(this)">حذف</button>`;
+      document.getElementById('projectsList').appendChild(div);
+      if(div.querySelector('.project-name')) div.querySelector('.project-name').value=proj.name||'';
+      if(div.querySelector('.project-status')) div.querySelector('.project-status').value=proj.status||'';
+      if(div.querySelector('.project-progress')){ div.querySelector('.project-progress').value=proj.progress||0; div.querySelector('.project-progress').nextElementSibling.textContent=(proj.progress||0)+'%'; }
+      if(div.querySelector('.project-notes')) div.querySelector('.project-notes').value=proj.notes||'';
+    });
+
+    // تقييم المخاطر
+    if(data.riskAssessments) data.riskAssessments.forEach(ass=>{
+      const div=document.createElement('div'); div.className='risk-assessment';
+      div.innerHTML=`<div class="form-row"><div class="form-group"><label>الموقع:</label><input type="text" class="risk-location" placeholder="موقع الخطر"></div><div class="form-group"><label>وصف العمل:</label><input type="text" class="risk-work" placeholder="وصف العمل"></div></div><div class="form-row"><div class="form-group"><label>معدل الخطر:</label><select class="risk-level"><option value="">-- اختر المستوى --</option><option>منخفض</option><option>متوسط</option><option>مرتفع</option><option>عالٍ جداً</option></select></div></div><div class="form-row"><div class="form-group"><label>الإجراءات الوقائية:</label><textarea class="risk-prevention" placeholder="الإجراءات الوقائية المطلوبة" rows="2"></textarea></div></div><button class="btn-danger" onclick="removeRiskAssessment(this)">حذف</button>`;
+      document.getElementById('riskAssessmentsList').appendChild(div);
+      if(div.querySelector('.risk-location')) div.querySelector('.risk-location').value=ass.location||'';
+      if(div.querySelector('.risk-work')) div.querySelector('.risk-work').value=ass.work||'';
+      if(div.querySelector('.risk-level')) div.querySelector('.risk-level').value=ass.level||'';
+      if(div.querySelector('.risk-prevention')) div.querySelector('.risk-prevention').value=ass.prevention||'';
+    });
+  }
+
+  // تحميل التقرير المحفوظ
+  function loadSavedReport(reportKey){
+    const saved=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}');
+    const report=saved[reportKey];
+    if(!report){ showNotification("التقرير غير موجود","error"); return; }
+    populateFormFromData(report);
+    document.getElementById('inputForm').classList.remove('hidden');
+    document.getElementById('reportPreview').classList.add('hidden');
+    showNotification(`تم تحميل التقرير`,"success");
+  }
+
+  // عرض التقرير (معاينة)
+  function viewSavedReport(reportKey){
+    const saved=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}');
+    const report=saved[reportKey];
+    if(!report){ showNotification("التقرير غير موجود","error"); return; }
+    updateReportPreviewWithData(report);
+    document.getElementById('inputForm').classList.add('hidden');
+    document.getElementById('reportPreview').classList.remove('hidden');
+    const saveContainer=document.querySelector('#reportPreview .save-container');
+    const old=saveContainer.querySelectorAll('[data-load-button]'); old.forEach(b=>b.remove());
+    const loadBtn=document.createElement('button'); loadBtn.className='btn-warning'; loadBtn.innerHTML='📝 تحميل للتعديل'; loadBtn.setAttribute('data-load-button','true'); loadBtn.onclick=()=>loadSavedReport(reportKey);
+    saveContainer.querySelector('h3').insertAdjacentElement('afterend',loadBtn);
+    showNotification(`عرض التقرير`,"info");
+  }
+
+  // تحميل المسودة التلقائي
+  function loadDraft(){
+    const savedDraft=localStorage.getItem('safetyReportDraft');
+    if(savedDraft){ const data=JSON.parse(savedDraft); populateFormFromData(data); showNotification("تم تحميل المسودة المحفوظة","info"); }
+    else showNotification("لا توجد مسودة محفوظة","warning");
+  }
+
+  // تحديث معاينة التقرير (دالة مساعدة – مختصرة)
+  function updateReportPreviewWithData(data){
+    document.getElementById('reportHijriDate').textContent=data.hijriDate; document.getElementById('reportDate').textContent=data.gregorianDate;
+    document.getElementById('reportSubtitle').innerHTML=`حقل: ${data.fieldName}`; document.getElementById('reportField').textContent=data.fieldName;
+    document.getElementById('executiveSummary').innerHTML=`<p><strong>اليوم:</strong> ${data.dayName}</p><p><strong>نوع التقرير:</strong> <span style="color:${data.reportType==='final'?'green':'orange'};">${data.reportType==='draft'?'مسودة':'تقرير نهائي'}</span></p><p><strong>الحالة التشغيلية:</strong> <span style="color:${data.projectStatus==='مكتمل'?'green':data.projectStatus==='قيد التنفيذ'?'orange':'gray'};">${data.projectStatus}</span></p><p><strong>مستوى الامتثال للسلامة:</strong> <span style="color:${data.safetyTours>5?'green':data.safetyTours>0?'orange':'red'};">${data.safetyTours>5?'مرتفع جداً':data.safetyTours>0?'متوسط':'منخفض'}</span></p><p><strong>أبرز الإنجازات:</strong> ${data.projectName!=='غير محدد'?`متابعة المشاريع - استكمال الأعمال الحرجة على البئر ${data.projectName}`:'لا توجد إنجازات مسجلة'}</p>`;
+    document.getElementById('workforceSummary').innerHTML=`<p><strong>إجمالي العمالة:</strong> ${data.totalWorkers} مستخدم</p><p><strong>العمالة الوطنية:</strong> ${data.nationalWorkers}</p><p><strong>العمالة الأجنبية:</strong> ${data.foreignWorkers}</p>`;
+    document.getElementById('kpiGrid').innerHTML=`<div class="kpi-card"><div>جولات السلامة</div><div class="kpi-value">${data.safetyTours}</div><div>من أصل 10 مستهدف</div></div><div class="kpi-card"><div>تصاريح العمل</div><div class="kpi-value">${data.workPermits}</div><div>تم تدقيقها</div></div><div class="kpi-card"><div>تقارير السلامة</div><div class="kpi-value">${data.safetyReports}</div><div>تم إعدادها</div></div><div class="kpi-card"><div>تفتيش النظافة</div><div class="kpi-value">${data.cleanlinessInspections}</div><div>تم تنفيذها</div></div>`;
+    let emergencyHTML=''; if(data.emergencyRecords && data.emergencyRecords.length) data.emergencyRecords.forEach(r=>emergencyHTML+=`<li><strong>${r.type}</strong> - ${r.time} - ${r.location} - ${r.response}</li>`); document.getElementById('emergencySummary').innerHTML=emergencyHTML?`<ul>${emergencyHTML}</ul>`:'<p>لا توجد حالات طارئة مسجلة</p>';
+    let vehicleHTML=`<p><strong>عدد حوادث المركبات:</strong> ${data.vehicleAccidents}</p>`; if(data.vehicleIncidents && data.vehicleIncidents.length) vehicleHTML+='<div><strong>تفاصيل الحوادث:</strong><ul>'+data.vehicleIncidents.map(inc=>`<li><strong>${inc.vehicleType||'غير محدد'}</strong> (رقم: ${inc.vehicleNumber}) في ${inc.location} - ${inc.datetime}<br>الوصف: ${inc.description}</li>`).join('')+'</ul></div>';
+    vehicleHTML+=`<p><strong>حالات التوقف الاضطراري:</strong> ${data.emergencyStops}</p>`; if(data.emergencyStopsDetails && data.emergencyStopsDetails.length) vehicleHTML+='<div><strong>تفاصيل التوقفات:</strong><ul>'+data.emergencyStopsDetails.map(stop=>`<li><strong>المكان:</strong> ${stop.location} - <strong>الوحدة:</strong> ${stop.unit}<br>السبب: ${stop.reason}<br>الإجراء: ${stop.action}</li>`).join('')+'</ul></div>';
+    vehicleHTML+=`<p><strong>عدد الإصابات المسجلة:</strong> ${data.injuries}</p>`; if(data.injuryCases && data.injuryCases.length) vehicleHTML+='<div><strong>تفاصيل الإصابات:</strong><ul>'+data.injuryCases.map(inj=>`<li><strong>${inj.name}</strong> - ${inj.type} في ${inj.location} - ${inj.datetime}<br>الوصف: ${inj.description}</li>`).join('')+'</ul></div>';
+    vehicleHTML+=`<p><strong>حالات معالجة:</strong> ${data.treatedCases}</p><p><strong>حالات فقدان وقت:</strong> ${data.lostTimeCases}</p>`;
+    document.getElementById('vehicleAccidentsSummary').innerHTML=vehicleHTML;
+    let unsafeHTML=`<p><strong>عدد الحالات غير الآمنة:</strong> ${data.unsafeConditions}</p>`; if(data.unsafeConditionsDetails && data.unsafeConditionsDetails.length) unsafeHTML+='<div><strong>تفاصيل الحالات:</strong><ul>'+data.unsafeConditionsDetails.map(cond=>`<li><strong>${cond.type}</strong> في ${cond.location}<br>الوصف: ${cond.description}<br>الإجراء: ${cond.action}</li>`).join('')+'</ul></div>';
+    document.getElementById('unsafeConditionsSummary').innerHTML=unsafeHTML;
+    let trainingHTML=`<p><strong>عدد برامج التدريب:</strong> ${data.trainingPrograms}</p><p><strong>إجمالي عدد الحضور:</strong> ${data.totalAttendees}</p>`; if(data.trainingProgramsDetails && data.trainingProgramsDetails.length) trainingHTML+='<div><strong>تفاصيل البرامج:</strong><ul>'+data.trainingProgramsDetails.map(prog=>`<li><strong>${prog.name}</strong> - الحضور: ${prog.attendees} - المدرب: ${prog.trainer} - التاريخ: ${prog.date}<br>ملاحظات: ${prog.notes}</li>`).join('')+'</ul></div>';
+    document.getElementById('trainingProgramsSummary').innerHTML=trainingHTML;
+    let riskHTML=''; if(data.riskAssessments && data.riskAssessments.length) riskHTML='<ul>'+data.riskAssessments.map(r=>`<li><strong>${r.location}</strong> - ${r.work} - مستوى الخطر: ${r.level}<br>الإجراءات الوقائية: ${r.prevention||''}</li>`).join('')+'</ul>'; else riskHTML='<p>لا توجد تقييمات مخاطر مسجلة</p>';
+    document.getElementById('riskAssessmentSummary').innerHTML=riskHTML;
+    let projectHTML=`<p><strong>المشروع الرئيسي:</strong> ${data.projectName}</p><p><strong>حالة الإنجاز:</strong> ${data.projectStatus}</p><p><strong>نسبة الإنجاز:</strong> ${data.progressValue}%</p><p><strong>الملاحظات:</strong> ${data.projectNotes}</p>`; if(data.projectsDetails && data.projectsDetails.length) projectHTML+='<div><strong>المشاريع الإضافية:</strong><ul>'+data.projectsDetails.map(proj=>`<li><strong>${proj.name}</strong> - الحالة: ${proj.status} - الإنجاز: ${proj.progress}%<br>ملاحظات: ${proj.notes}</li>`).join('')+'</ul></div>';
+    document.getElementById('projectSummary').innerHTML=projectHTML;
+  }
+
+  // حذف تقرير
+  function deleteSavedReport(reportKey){
+    if(confirm("هل أنت متأكد من أنك تريد حذف هذا التقرير؟")){
+      const saved=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}');
+      if(saved[reportKey]){ delete saved[reportKey]; localStorage.setItem('savedReportsFolder',JSON.stringify(saved)); db.ref('reports/'+reportKey).remove(); showNotification("تم حذف التقرير","success"); }
+      else showNotification("التقرير غير موجود","error");
+    }
+  }
+
+  // عرض التقارير المحفوظة (مع Firebase)
+  function loadSavedReports(){
+    if(reportsListener) db.ref('reports').off('value',reportsListener);
+    reportsListener=(snapshot)=>{
+      const firebase=snapshot.val()||{}; const local=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}'); const merged={...local,...firebase};
+      localStorage.setItem('savedReportsFolder',JSON.stringify(merged)); displayReports(merged);
+    };
+    db.ref('reports').on('value',reportsListener,()=>{ showNotification('حدث خطأ في الاتصال بقاعدة البيانات، سيتم عرض التقارير المحلية فقط','warning'); displayReports(JSON.parse(localStorage.getItem('savedReportsFolder')||'{}')); });
+  }
+  function displayReports(reports){
+    const grid=document.getElementById('savedReportsGrid'); const keys=Object.keys(reports).sort((a,b)=>reports[b].timestamp-reports[a].timestamp);
+    if(keys.length===0){ grid.innerHTML='<div class="empty-folder"><p>📂 المجلد فارغ</p><p>لم يتم حفظ أي تقارير بعد.</p></div>'; document.querySelector('#savedReportsFolder .folder-header h3').textContent='📁 مجلد التقارير المحفوظة (0)'; return; }
+    let filtered=keys; if(currentFilter==='draft') filtered=keys.filter(k=>reports[k].reportType==='draft'); else if(currentFilter==='final') filtered=keys.filter(k=>reports[k].reportType==='final');
+    if(filtered.length===0){ grid.innerHTML='<div class="empty-folder"><p>📂 لا توجد تقارير من النوع المحدد</p></div>'; document.querySelector('#savedReportsFolder .folder-header h3').textContent=`📁 مجلد التقارير المحفوظة (0/${keys.length})`; return; }
+    let html=''; filtered.forEach(key=>{ const r=reports[key]; html+=`<div class="report-card ${r.reportType==='draft'?'draft':'final'}"><div class="report-card-header"><div><div class="report-date">${r.hijriDate||'غير محدد'}</div><div class="report-field">${r.fieldName||'غير محدد'}</div></div><div class="report-type ${r.reportType==='draft'?'type-draft':'type-final'}">${r.reportType==='draft'?'مسودة':'نهائي'}</div></div><div class="report-card-content"><div class="report-stats"><div class="report-stat"><div class="stat-value">${r.totalWorkers||'0'}</div><div>العمالة</div></div><div class="report-stat"><div class="stat-value">${r.safetyTours||'0'}</div><div>جولات</div></div><div class="report-stat"><div class="stat-value">${r.vehicleAccidents||'0'}</div><div>حوادث</div></div></div><p style="font-size:0.9rem;color:#666;margin-top:10px;">${r.gregorianDate||''}</p></div><div class="report-card-actions"><button class="btn-primary" onclick="viewSavedReport('${key}')">عرض</button><button class="btn-info" onclick="loadSavedReport('${key}')">تحميل</button><button class="btn-danger" onclick="deleteSavedReport('${key}')">حذف</button></div></div>`; });
+    grid.innerHTML=html; document.querySelector('#savedReportsFolder .folder-header h3').textContent=`📁 مجلد التقارير المحفوظة (${filtered.length}/${keys.length})`; updateFolderTabs();
+  }
+  function updateFolderTabs(){ const tabs=document.querySelectorAll('.folder-tab'); tabs.forEach(t=>{ t.classList.remove('active'); if((t.textContent==='الكل' && currentFilter==='all')||(t.textContent==='المسودات' && currentFilter==='draft')||(t.textContent==='التقارير النهائية' && currentFilter==='final')) t.classList.add('active'); }); }
+  function filterReports(type){ currentFilter=type; const merged=JSON.parse(localStorage.getItem('savedReportsFolder')||'{}'); displayReports(merged); }
+  function refreshSavedReports(){ loadSavedReports(); showNotification("تم تحديث قائمة التقارير","info"); }
+
+  // البريد الإلكتروني
+  function openEmailDialog(){ document.getElementById('emailOverlay').style.display='block'; document.getElementById('emailDialog').style.display='block'; const data=collectCurrentData(); document.getElementById('emailSubject').value=`تقرير السلامة اليومي - ${data.fieldName} - ${data.hijriDate}`; document.getElementById('emailBody').value=`السادة الإدارة،\n\nأرفق لكم تقرير السلامة اليومي للحقل ${data.fieldName} بتاريخ ${data.hijriDate} (${data.dayName}).\n\nإجمالي العمالة: ${data.totalWorkers}\nجولات السلامة: ${data.safetyTours}\nتصاريح العمل: ${data.workPermits}\nحوادث المركبات: ${data.vehicleAccidents}\nالإصابات المسجلة: ${data.injuries}\nالحالات غير الآمنة: ${data.unsafeConditions}\nبرامج التدريب: ${data.trainingPrograms}\nإجمالي الحضور: ${data.totalAttendees}\n\nالمشروع الرئيسي: ${data.projectName}\nحالة الإنجاز: ${data.projectStatus}\nنسبة الإنجاز: ${data.progressValue}%\n\nمع أطيب التحيات،\nفريق السلامة - ${data.fieldName}\n${data.gregorianDate}`; }
+  function closeEmailDialog(){ document.getElementById('emailOverlay').style.display='none'; document.getElementById('emailDialog').style.display='none'; }
+  function sendEmail(){ const to=document.getElementById('emailTo').value; if(!to){ showNotification("يرجى إدخال عنوان البريد الإلكتروني","error"); return; } window.location.href=`mailto:${to}?subject=${encodeURIComponent(document.getElementById('emailSubject').value)}&body=${encodeURIComponent(document.getElementById('emailBody').value)}`; closeEmailDialog(); showNotification("تم فتح بريد إلكتروني جديد لإرسال التقرير","success"); }
+
+  // دوال عامة
+  function generateReport(){ updateReportPreviewWithData(collectCurrentData()); document.getElementById('inputForm').classList.add('hidden'); document.getElementById('reportPreview').classList.remove('hidden'); showNotification('تم إنشاء التقرير بنجاح!','success'); }
+  function backToForm(){ document.getElementById('inputForm').classList.remove('hidden'); document.getElementById('reportPreview').classList.add('hidden'); }
+  function exportReportJSON(){ const data=collectCurrentData(); const json=JSON.stringify(data,null,2); const blob=new Blob([json],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`تقرير_السلامة_${data.hijriDate.replace(/\s+/g,'_').replace(/هـ/g,'')}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showNotification("تم تصدير التقرير","success"); }
+  function clearAll(){ if(confirm("هل أنت متأكد من أنك تريد تفريغ جميع الحقول؟")){ document.querySelectorAll('input[type="number"]').forEach(i=>i.value=0); document.getElementById('projectName').value=''; document.getElementById('projectNotes').value=''; document.getElementById('projectStatus').value=''; document.getElementById('fieldSelect').value=''; document.getElementById('progressSlider').value=0; document.getElementById('progressValue').textContent='0%'; ['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList'].forEach(id=>document.getElementById(id).innerHTML=''); updateTotals(); updatePermitTotal(); localStorage.removeItem('safetyReportDraft'); showNotification('تم تفريغ النموذج','success'); } }
+
+  // تهيئة الصفحة
+  document.addEventListener('DOMContentLoaded',()=>{
+    document.getElementById('hijriDate').textContent=getHijriDate(); document.getElementById('currentDate').textContent=getCurrentDate();
+    document.getElementById('reportHijriDate').textContent=getHijriDate(); document.getElementById('reportDate').textContent=getCurrentDate();
+    updateTotals(); updatePermitTotal(); loadDraft(); loadSavedReports();
+  });
+</script>
+</body>
+</html>
