@@ -100,6 +100,14 @@
     .email-dialog .button-group { display: flex; justify-content: space-between; gap: 10px; }
     .overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1050; display: none; }
     @media (max-width: 768px) { .emergency-record { flex-direction: column; } .permit-status { flex-direction: column; } .control-panel { flex-direction: column; } .counter-input { flex-direction: column; align-items: flex-start; } .counter-input button, .counter-input input { margin: 5px 0; } .form-row { flex-direction: column; } .email-dialog { width: 95%; padding: 20px; } .reports-grid { grid-template-columns: 1fr; } .folder-tabs { flex-wrap: wrap; } }
+    /* ===== تفاصيل مؤشرات الأداء (قابلة للإضافة والكتابة) ===== */
+    .digital-table tr.details-row, .digital-table tr.details-row:nth-child(even) { background: #fff; }
+    .digital-table tr.details-row > td { text-align: right; padding: 15px; background: #fff; }
+    .details-panel { background: #f8fbff; border: 1px dashed var(--primary); border-radius: 8px; padding: 15px; }
+    .details-panel h4 { color: var(--primary); margin-bottom: 10px; }
+    .details-panel .incident-record textarea, .details-panel .incident-record input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px; }
+    .details-panel .incident-record textarea { resize: vertical; }
+    .details-panel .incident-record { margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -117,12 +125,19 @@
   <header>
     <h1>تقرير السلامة اليومي</h1>
     <div class="date-container"><div class="hijri-date" id="hijriDate"></div><div class="gregorian-date" id="currentDate"></div></div>
-    <p class="subtitle"><select id="fieldSelect" class="field-select"><option value="">-- اختر الحقل --</option><option value="الحطيبة والاستقلال">حقل: الحطيبة والاستقلال</option><option value="الساحل والصمود">حقل: الساحل والصمود</option><option value="الراقوبة">حقل: الراقوبة</option><option value="زلطن">حقل: زلطن</option></select></p>
+    <p class="subtitle"><select id="fieldSelect" class="field-select"><option value="">-- اختر الحقل --</option><option value="الحطيبة والاستقلال">حقل: الحطيبة والاستقلال</option><option value="الساحل والصمود">حقل: الساحل والصمود</option><option value="الراقوبة">حقل: الراقوبة</option><option value="زلطن">حقل: زلطن </option>< value="">حقل: ="الخير">حقل: الخير</><option value="الخير">حقل: الخير</option>
+<option value="الرشاد">حقل: الرشاد</option>
+<option value="متخندوش">حقل: متخندوش</option>
+<option value="كامليا">حقل: كامليا</option>
+</select></p>
   </header>
   <div id="inputForm">
     <fieldset><legend>القوى العاملة</legend><div class="counter-input"><label>العمالة الوطنية:</label><button class="btn-secondary" onclick="decrement('national'); updateTotals()">-</button><input type="number" id="national" value="0" min="0" class="digital-input" onchange="updateTotals()"><button class="btn-primary" onclick="increment('national'); updateTotals()">+</button></div><div class="counter-input"><label>العمالة الأجنبية:</label><button class="btn-secondary" onclick="decrement('foreign'); updateTotals()">-</button><input type="number" id="foreign" value="0" min="0" class="digital-input" onchange="updateTotals()"><button class="btn-primary" onclick="increment('foreign'); updateTotals()">+</button></div><div class="total-display"><strong>المجموع: <span id="totalWorkers">0</span> مستخدم</strong></div></fieldset>
     <fieldset><legend>سجل الحالات الطارئة</legend><button class="btn-primary" onclick="addEmergency()">+ إضافة حالة جديدة</button><div id="emergencyLog"></div></fieldset>
-    <fieldset><legend>مؤشرات أداء السلامة</legend><table class="digital-table"><tr><th>النشاط</th><th>العدد</th><th>الإجراء</th></tr><tr><td>جولات السلامة</td><td><input type="number" id="safetyTours" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('جولات السلامة')">التفاصيل</button></td></tr><tr><td>تصاريح العمل المفحوصة</td><td><input type="number" id="workPermits" value="0" min="0" class="digital-input small" readonly style="background-color:#f0f0f0;"></td><td><button class="btn-secondary" onclick="managePermits()">إدارة التصاريح</button></td></tr><tr><td>تقرير السلامة العام</td><td><input type="number" id="safetyReports" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('تقرير السلامة العام')">التفاصيل</button></td></tr><tr><td>تفتيش النظافة والنظام</td><td><input type="number" id="cleanlinessInspections" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="showDetails('تفتيش النظافة والنظام')">التفاصيل</button></td></tr></table></fieldset>
+    <fieldset><legend>مؤشرات أداء السلامة</legend><table class="digital-table"><tr><th>النشاط</th><th>العدد</th><th>الإجراء</th></tr><tr><td>جولات السلامة</td><td><input type="number" id="safetyTours" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="toggleDetails('toursDetailsRow', this)">التفاصيل</button></td></tr>
+<tr class="details-row hidden" id="toursDetailsRow"><td colspan="3"><div class="details-panel"><h4>تفاصيل جولات السلامة</h4><div id="safetyToursList"></div><button class="btn-primary" onclick="addDetail('tours')">+ إضافة جولة</button></div></td></tr><tr><td>تصاريح العمل المفحوصة</td><td><input type="number" id="workPermits" value="0" min="0" class="digital-input small" readonly style="background-color:#f0f0f0;"></td><td><button class="btn-secondary" onclick="toggleDetails('permitsDetailsRow', this)">إدارة التصاريح</button></td></tr>
+<tr class="details-row hidden" id="permitsDetailsRow"><td colspan="3"><div class="details-panel"><h4>تفاصيل التصاريح المفحوصة</h4><div id="permitDetailsList"></div><button class="btn-primary" onclick="addDetail('permits')">+ إضافة تصريح</button></div></td></tr><tr><td>تقرير السلامة العام</td><td><input type="number" id="safetyReports" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="toggleDetails('reportsDetailsRow', this)">التفاصيل</button></td></tr>
+<tr class="details-row hidden" id="reportsDetailsRow"><td colspan="3"><div class="details-panel"><h4>تفاصيل تقرير السلامة العام</h4><div id="safetyReportDetailsList"></div><button class="btn-primary" onclick="addDetail('reports')">+ إضافة بند</button></div></td></tr><tr><td>تفتيش النظافة والنظام</td><td><input type="number" id="cleanlinessInspections" value="0" min="0" class="digital-input small"></td><td><button class="btn-secondary" onclick="toggleDetails('cleanlinessDetailsRow', this)">التفاصيل</button></td></tr><tr class="details-row hidden" id="cleanlinessDetailsRow"><td colspan="3"><div class="details-panel"><h4>تفاصيل تفتيش النظافة والنظام</h4><div id="cleanlinessDetailsList"></div><button class="btn-primary" onclick="addDetail('cleanliness')">+ إضافة بند</button></div></td></tr></table></fieldset>
     <fieldset><legend>حوادث المركبات والآليات والإصابات</legend><div class="form-row"><div class="form-group"><label>عدد حوادث المركبات:</label><input type="number" id="vehicleAccidents" value="0" min="0" class="digital-input"></div><div class="form-group"><label>عدد حالات التوقف الاضطراري:</label><input type="number" id="emergencyStops" value="0" min="0" class="digital-input"></div></div><div class="form-row"><div class="form-group"><label>عدد الإصابات المسجلة:</label><input type="number" id="injuries" value="0" min="0" class="digital-input"></div><div class="form-group"><label>حالات معالجة:</label><input type="number" id="treatedCases" value="0" min="0" class="digital-input"></div><div class="form-group"><label>حالات فقدان وقت:</label><input type="number" id="lostTimeCases" value="0" min="0" class="digital-input"></div></div><button class="btn-primary" onclick="addVehicleIncident()">+ إضافة حادث مركبة</button><button class="btn-warning" onclick="addEmergencyStop()">+ إضافة توقف اضطراري</button><button class="btn-danger" onclick="addInjuryCase()">+ إضافة حالة إصابة</button><div id="vehicleIncidentsList"></div><div id="emergencyStopsList"></div><div id="injuryCasesList"></div></fieldset>
     <fieldset><legend>الحالات غير الآمنة</legend><div class="form-row"><div class="form-group"><label>عدد الحالات غير الآمنة:</label><input type="number" id="unsafeConditions" value="0" min="0" class="digital-input"></div></div><button class="btn-warning" onclick="addUnsafeCondition()">+ إضافة حالة غير آمنة</button><div id="unsafeConditionsList"></div></fieldset>
     <fieldset><legend>برامج تدريب السلامة</legend><div class="form-row"><div class="form-group"><label>عدد برامج التدريب:</label><input type="number" id="trainingPrograms" value="0" min="0" class="digital-input"></div><div class="form-group"><label>إجمالي عدد الحضور:</label><input type="number" id="totalAttendees" value="0" min="0" class="digital-input"></div></div><button class="btn-success" onclick="addTrainingProgram()">+ إضافة برنامج تدريبي</button><div id="trainingProgramsList"></div></fieldset>
@@ -137,7 +152,7 @@
     <p style="text-align:center;" id="reportSubtitle">حقل: <span id="reportField"></span></p>
     <div class="report-section"><h3>ملخص التنفيذ والإنجاز</h3><div id="executiveSummary"></div></div>
     <div class="report-section"><h3>القوى العاملة</h3><div id="workforceSummary"></div></div>
-    <div class="report-section"><h3>مؤشرات أداء السلامة</h3><div class="kpi-grid" id="kpiGrid"></div></div>
+    <div class="report-section"><h3>مؤشرات أداء السلامة</h3><div class="kpi-grid" id="kpiGrid"></div><div id="kpiDetailsSummary"></div></div>
     <div class="report-section"><h3>الحالات الطارئة</h3><div id="emergencySummary"></div></div>
     <div class="report-section"><h3>حوادث المركبات والآليات والإصابات</h3><div id="vehicleAccidentsSummary"></div></div>
     <div class="report-section"><h3>الحالات غير الآمنة</h3><div id="unsafeConditionsSummary"></div></div>
@@ -201,6 +216,106 @@
   function showDetails(type){ showNotification(`عرض تفاصيل ${type}`,"info"); }
   function managePermits(){ showNotification("فتح نافذة إدارة تصاريح العمل","info"); }
 
+
+  // ========== تفاصيل مؤشرات الأداء: جولات السلامة / تصاريح العمل المفحوصة / تقرير السلامة العام ==========
+  const DETAIL_TYPES = {
+    tours: {
+      rowId: 'toursDetailsRow', listId: 'safetyToursList', counterId: 'safetyTours', title: 'تفاصيل جولات السلامة',
+      fields: [
+        { key: 'location', label: 'موقع الجولة:', tag: 'input', type: 'text', placeholder: 'موقع الجولة' },
+        { key: 'time', label: 'الوقت:', tag: 'input', type: 'time' },
+        { key: 'details', label: 'التفاصيل والملاحظات:', tag: 'textarea', placeholder: 'اكتب تفاصيل الجولة وما تمت ملاحظته', full: true }
+      ]
+    },
+    permits: {
+      rowId: 'permitsDetailsRow', listId: 'permitDetailsList', counterId: null, title: 'تفاصيل التصاريح المفحوصة',
+      fields: [
+        { key: 'number', label: 'رقم التصريح:', tag: 'input', type: 'text', placeholder: 'رقم التصريح' },
+        { key: 'workType', label: 'نوع العمل:', tag: 'input', type: 'text', placeholder: 'مثال: عمل على الساخن' },
+        { key: 'location', label: 'الموقع:', tag: 'input', type: 'text', placeholder: 'موقع العمل' },
+        { key: 'details', label: 'ملاحظات الفحص:', tag: 'textarea', placeholder: 'اكتب ملاحظات فحص التصريح', full: true }
+      ]
+    },
+    reports: {
+      rowId: 'reportsDetailsRow', listId: 'safetyReportDetailsList', counterId: 'safetyReports', title: 'تفاصيل تقرير السلامة العام',
+      fields: [
+        { key: 'title', label: 'العنوان / الموضوع:', tag: 'input', type: 'text', placeholder: 'عنوان البند' },
+        { key: 'details', label: 'التفاصيل:', tag: 'textarea', placeholder: 'اكتب التفاصيل', full: true }
+      ]
+    },
+    cleanliness: {
+      rowId: 'cleanlinessDetailsRow', listId: 'cleanlinessDetailsList', counterId: 'cleanlinessInspections', title: 'تفاصيل تفتيش النظافة والنظام',
+      fields: [
+        { key: 'title', label: 'العنوان / الموضوع:', tag: 'input', type: 'text', placeholder: 'عنوان بند التفتيش' },
+        { key: 'details', label: 'التفاصيل:', tag: 'textarea', placeholder: 'اكتب تفاصيل التفتيش والملاحظات', full: true }
+      ]
+    }
+  };
+
+  function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function toggleDetails(rowId, btn){
+    const row=document.getElementById(rowId); const nowHidden=row.classList.toggle('hidden');
+    if(btn){ btn.classList.toggle('btn-primary',!nowHidden); btn.classList.toggle('btn-secondary',nowHidden); }
+  }
+
+  function createDetailRecord(type, values){
+    const cfg=DETAIL_TYPES[type]; values=values||{};
+    const div=document.createElement('div'); div.className='incident-record detail-record'; div.dataset.detailType=type;
+    const makeGroup=f=>{
+      const g=document.createElement('div'); g.className='form-group';
+      const l=document.createElement('label'); l.textContent=f.label;
+      const el=document.createElement(f.tag); el.className='detail-field'; el.dataset.key=f.key;
+      if(f.tag==='input') el.type=f.type||'text'; else el.rows=3;
+      if(f.placeholder) el.placeholder=f.placeholder;
+      el.value=values[f.key]||'';
+      g.appendChild(l); g.appendChild(el); return g;
+    };
+    const short=cfg.fields.filter(f=>!f.full), full=cfg.fields.filter(f=>f.full);
+    if(short.length){ const row=document.createElement('div'); row.className='form-row'; short.forEach(f=>row.appendChild(makeGroup(f))); div.appendChild(row); }
+    full.forEach(f=>{ const row=document.createElement('div'); row.className='form-row'; row.appendChild(makeGroup(f)); div.appendChild(row); });
+    const del=document.createElement('button'); del.className='btn-danger'; del.textContent='حذف'; del.onclick=()=>removeDetail(del,type);
+    div.appendChild(del);
+    return div;
+  }
+
+  // إضافة يدوية: تزيد العداد (لجولات السلامة وتقرير السلامة العام)، أما تصاريح العمل فعدّادها محسوب من حالات التصاريح
+  function addDetail(type){
+    const cfg=DETAIL_TYPES[type];
+    document.getElementById(cfg.listId).appendChild(createDetailRecord(type));
+    if(cfg.counterId){ const c=document.getElementById(cfg.counterId); c.value=(parseInt(c.value)||0)+1; }
+  }
+  function removeDetail(btn,type){
+    const cfg=DETAIL_TYPES[type]; btn.closest('.detail-record').remove();
+    if(cfg.counterId){ const c=document.getElementById(cfg.counterId); const cur=parseInt(c.value)||0; if(cur>0) c.value=cur-1; }
+  }
+  function collectDetails(type){
+    const cfg=DETAIL_TYPES[type];
+    return Array.from(document.querySelectorAll('#'+cfg.listId+' .detail-record')).map(r=>{
+      const o={}; r.querySelectorAll('.detail-field').forEach(f=>o[f.dataset.key]=f.value||''); return o;
+    });
+  }
+  // استرجاع من البيانات المحفوظة دون تغيير العدادات
+  function restoreDetails(type, arr){
+    const cfg=DETAIL_TYPES[type]; const list=document.getElementById(cfg.listId); list.innerHTML='';
+    (arr||[]).forEach(v=>list.appendChild(createDetailRecord(type,v)));
+    if(arr && arr.length) document.getElementById(cfg.rowId).classList.remove('hidden');
+  }
+  function renderKpiDetails(data){
+    const map={ tours:data.safetyToursDetails, permits:data.permitsDetails, reports:data.safetyReportsDetails, cleanliness:data.cleanlinessDetails };
+    let html='';
+    Object.keys(map).forEach(type=>{
+      const arr=map[type]; if(!arr||!arr.length) return;
+      const cfg=DETAIL_TYPES[type];
+      html+=`<div style="margin-top:15px"><strong>${cfg.title}:</strong><ul>`+arr.map(item=>{
+        const head=cfg.fields.filter(f=>!f.full).map(f=>item[f.key]?`${esc(f.label.replace(':',''))}: ${esc(item[f.key])}`:'').filter(Boolean).join(' - ');
+        const body=cfg.fields.filter(f=>f.full).map(f=>item[f.key]?esc(item[f.key]).replace(/\n/g,'<br>'):'').filter(Boolean).join('<br>');
+        return `<li>${head}${head&&body?'<br>':''}${body}</li>`;
+      }).join('')+'</ul></div>';
+    });
+    document.getElementById('kpiDetailsSummary').innerHTML=html;
+  }
+
   // جمع البيانات
   function collectCurrentData(){
     return {
@@ -223,6 +338,7 @@
       trainingProgramsDetails: Array.from(document.querySelectorAll('#trainingProgramsList .training-program')).map(p=>({name: p.querySelector('.training-name')?.value||'', attendees: p.querySelector('.attendees-count')?.value||0, trainer: p.querySelector('.trainer-name')?.value||'', date: p.querySelector('.training-date')?.value||'', notes: p.querySelector('.training-notes')?.value||''})),
       projectsDetails: Array.from(document.querySelectorAll('#projectsList .incident-record')).map(p=>({name: p.querySelector('.project-name')?.value||'', status: p.querySelector('.project-status')?.value||'', progress: p.querySelector('.project-progress')?.value||0, notes: p.querySelector('.project-notes')?.value||''})),
       riskAssessments: Array.from(document.querySelectorAll('.risk-assessment')).map(a=>({location: a.querySelector('.risk-location')?.value||'', work: a.querySelector('.risk-work')?.value||'', level: a.querySelector('.risk-level')?.value||'', prevention: a.querySelector('.risk-prevention')?.value||''})),
+      safetyToursDetails: collectDetails('tours'), permitsDetails: collectDetails('permits'), safetyReportsDetails: collectDetails('reports'), cleanlinessDetails: collectDetails('cleanliness'),
       saveTime: new Date().toISOString()
     };
   }
@@ -251,8 +367,9 @@
     updateTotals(); updatePermitTotal();
 
     // تفريغ القوائم
-    const containers=['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList'];
+    const containers=['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList','safetyToursList','permitDetailsList','safetyReportDetailsList','cleanlinessDetailsList','cleanlinessDetailsList'];
     containers.forEach(id=>document.getElementById(id).innerHTML='');
+    restoreDetails('tours', data.safetyToursDetails); restoreDetails('permits', data.permitsDetails); restoreDetails('reports', data.safetyReportsDetails); restoreDetails('cleanliness', data.cleanlinessDetails);
 
     // إعادة بناء الحالات الطارئة
     if(data.emergencyRecords) data.emergencyRecords.forEach(rec=>{
@@ -383,7 +500,7 @@
   // تحديث معاينة التقرير (دالة مساعدة – مختصرة)
   function updateReportPreviewWithData(data){
     document.getElementById('reportHijriDate').textContent=data.hijriDate; document.getElementById('reportDate').textContent=data.gregorianDate;
-    document.getElementById('reportSubtitle').innerHTML=`حقل: ${data.fieldName}`; document.getElementById('reportField').textContent=data.fieldName;
+    document.getElementById('reportField').textContent=data.fieldName;
     document.getElementById('executiveSummary').innerHTML=`<p><strong>اليوم:</strong> ${data.dayName}</p><p><strong>نوع التقرير:</strong> <span style="color:${data.reportType==='final'?'green':'orange'};">${data.reportType==='draft'?'مسودة':'تقرير نهائي'}</span></p><p><strong>الحالة التشغيلية:</strong> <span style="color:${data.projectStatus==='مكتمل'?'green':data.projectStatus==='قيد التنفيذ'?'orange':'gray'};">${data.projectStatus}</span></p><p><strong>مستوى الامتثال للسلامة:</strong> <span style="color:${data.safetyTours>5?'green':data.safetyTours>0?'orange':'red'};">${data.safetyTours>5?'مرتفع جداً':data.safetyTours>0?'متوسط':'منخفض'}</span></p><p><strong>أبرز الإنجازات:</strong> ${data.projectName!=='غير محدد'?`متابعة المشاريع - استكمال الأعمال الحرجة على البئر ${data.projectName}`:'لا توجد إنجازات مسجلة'}</p>`;
     document.getElementById('workforceSummary').innerHTML=`<p><strong>إجمالي العمالة:</strong> ${data.totalWorkers} مستخدم</p><p><strong>العمالة الوطنية:</strong> ${data.nationalWorkers}</p><p><strong>العمالة الأجنبية:</strong> ${data.foreignWorkers}</p>`;
     document.getElementById('kpiGrid').innerHTML=`<div class="kpi-card"><div>جولات السلامة</div><div class="kpi-value">${data.safetyTours}</div><div>من أصل 10 مستهدف</div></div><div class="kpi-card"><div>تصاريح العمل</div><div class="kpi-value">${data.workPermits}</div><div>تم تدقيقها</div></div><div class="kpi-card"><div>تقارير السلامة</div><div class="kpi-value">${data.safetyReports}</div><div>تم إعدادها</div></div><div class="kpi-card"><div>تفتيش النظافة</div><div class="kpi-value">${data.cleanlinessInspections}</div><div>تم تنفيذها</div></div>`;
@@ -401,6 +518,7 @@
     document.getElementById('riskAssessmentSummary').innerHTML=riskHTML;
     let projectHTML=`<p><strong>المشروع الرئيسي:</strong> ${data.projectName}</p><p><strong>حالة الإنجاز:</strong> ${data.projectStatus}</p><p><strong>نسبة الإنجاز:</strong> ${data.progressValue}%</p><p><strong>الملاحظات:</strong> ${data.projectNotes}</p>`; if(data.projectsDetails && data.projectsDetails.length) projectHTML+='<div><strong>المشاريع الإضافية:</strong><ul>'+data.projectsDetails.map(proj=>`<li><strong>${proj.name}</strong> - الحالة: ${proj.status} - الإنجاز: ${proj.progress}%<br>ملاحظات: ${proj.notes}</li>`).join('')+'</ul></div>';
     document.getElementById('projectSummary').innerHTML=projectHTML;
+    renderKpiDetails(data);
   }
 
   // حذف تقرير
@@ -442,7 +560,7 @@
   function generateReport(){ updateReportPreviewWithData(collectCurrentData()); document.getElementById('inputForm').classList.add('hidden'); document.getElementById('reportPreview').classList.remove('hidden'); showNotification('تم إنشاء التقرير بنجاح!','success'); }
   function backToForm(){ document.getElementById('inputForm').classList.remove('hidden'); document.getElementById('reportPreview').classList.add('hidden'); }
   function exportReportJSON(){ const data=collectCurrentData(); const json=JSON.stringify(data,null,2); const blob=new Blob([json],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=`تقرير_السلامة_${data.hijriDate.replace(/\s+/g,'_').replace(/هـ/g,'')}.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); showNotification("تم تصدير التقرير","success"); }
-  function clearAll(){ if(confirm("هل أنت متأكد من أنك تريد تفريغ جميع الحقول؟")){ document.querySelectorAll('input[type="number"]').forEach(i=>i.value=0); document.getElementById('projectName').value=''; document.getElementById('projectNotes').value=''; document.getElementById('projectStatus').value=''; document.getElementById('fieldSelect').value=''; document.getElementById('progressSlider').value=0; document.getElementById('progressValue').textContent='0%'; ['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList'].forEach(id=>document.getElementById(id).innerHTML=''); updateTotals(); updatePermitTotal(); localStorage.removeItem('safetyReportDraft'); showNotification('تم تفريغ النموذج','success'); } }
+  function clearAll(){ if(confirm("هل أنت متأكد من أنك تريد تفريغ جميع الحقول؟")){ document.querySelectorAll('input[type="number"]').forEach(i=>i.value=0); document.getElementById('projectName').value=''; document.getElementById('projectNotes').value=''; document.getElementById('projectStatus').value=''; document.getElementById('fieldSelect').value=''; document.getElementById('progressSlider').value=0; document.getElementById('progressValue').textContent='0%'; ['emergencyLog','vehicleIncidentsList','emergencyStopsList','injuryCasesList','unsafeConditionsList','trainingProgramsList','riskAssessmentsList','projectsList','safetyToursList','permitDetailsList','safetyReportDetailsList','cleanlinessDetailsList','cleanlinessDetailsList'].forEach(id=>document.getElementById(id).innerHTML=''); updateTotals(); updatePermitTotal(); localStorage.removeItem('safetyReportDraft'); showNotification('تم تفريغ النموذج','success'); } }
 
   // تهيئة الصفحة
   document.addEventListener('DOMContentLoaded',()=>{
